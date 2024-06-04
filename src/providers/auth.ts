@@ -1,5 +1,6 @@
 import { AuthProvider } from "@refinedev/core";
 
+// import { User } from "@/graphql/schema.types";
 
 import { API_URL, dataProvider } from "./data";
 
@@ -7,7 +8,7 @@ import { API_URL, dataProvider } from "./data";
  * For demo purposes and to make it easier to test the app, you can use the following credentials:
  */
 export const authCredentials = {
-  email: "mukundppai10@gmail.com",
+  email: "michael.scott@dundermifflin.com",
   password: "demodemo",
 };
 
