@@ -30,7 +30,7 @@ import "@refinedev/antd/dist/reset.css";
 
 const App = () => {
   return (
-    <BrowserRouter>
+    (<BrowserRouter>
       <ConfigProvider theme={RefineThemes.Blue}>
         <AntdApp>
           <DevtoolsProvider>
@@ -46,6 +46,7 @@ const App = () => {
                 warnWhenUnsavedChanges: true,
                 liveMode: "auto",
                 useNewQueryKeys: true,
+                projectId: "6L6Q5e-Yh8XVc-EKjqLy"
               }}
             >
               <Routes>
@@ -104,7 +105,7 @@ const App = () => {
           </DevtoolsProvider>
         </AntdApp>
       </ConfigProvider>
-    </BrowserRouter>
+    </BrowserRouter>)
   );
 };
 

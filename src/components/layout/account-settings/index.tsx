@@ -1,49 +1,19 @@
-import { useState } from "react";
-
-import { type HttpError, useOne, useUpdate } from "@refinedev/core";
+import { SaveButton, useForm } from "@refinedev/antd";
+import type { HttpError } from "@refinedev/core";
 import type { GetFields, GetVariables } from "@refinedev/nestjs-query";
 
-import {
-  CloseOutlined,
-  EditOutlined,
-  GlobalOutlined,
-  IdcardOutlined,
-  MailOutlined,
-  PhoneOutlined,
-  SafetyCertificateOutlined,
-  UserOutlined,
-} from "@ant-design/icons";
-import {
-  Button,
-  Card,
-  Drawer,
-  Input,
-  Select,
-  Space,
-  Spin,
-  Typography,
-} from "antd";
+import { CloseOutlined } from "@ant-design/icons";
+import { Button, Card, Drawer, Form, Input, Spin } from "antd";
 
-import { TimezoneEnum } from "@/enums";
 import type {
-  AccountSettingsGetUserQuery,
-  AccountSettingsUpdateUserMutation,
-  AccountSettingsUpdateUserMutationVariables,
+  UpdateUserMutation,
+  UpdateUserMutationVariables,
 } from "@/graphql/types";
+import { getNameInitials } from "@/utilities";
 
 import { CustomAvatar } from "../../custom-avatar";
-import { SingleElementForm } from "../../single-element-form";
 import { Text } from "../../text";
-import styles from "./index.module.css";
-import {
-  ACCOUNT_SETTINGS_GET_USER_QUERY,
-  ACCOUNT_SETTINGS_UPDATE_USER_MUTATION,
-} from "./queries";
-
-const timezoneOptions = Object.keys(TimezoneEnum).map((key) => ({
-  label: TimezoneEnum[key as keyof typeof TimezoneEnum],
-  value: TimezoneEnum[key as keyof typeof TimezoneEnum],
-}));
+import { UPDATE_USER_MUTATION } from "./queries";
 
 type Props = {
   opened: boolean;
@@ -51,70 +21,44 @@ type Props = {
   userId: string;
 };
 
-type FormKeys = "email" | "jobTitle" | "phone" | "timezone";
-
 export const AccountSettings = ({ opened, setOpened, userId }: Props) => {
-  const [activeForm, setActiveForm] = useState<FormKeys>();
-
-  const { data, isLoading, isError } = useOne<
-    GetFields<AccountSettingsGetUserQuery>
+  const { saveButtonProps, formProps, queryResult } = useForm<
+    GetFields<UpdateUserMutation>,
+    HttpError,
+    GetVariables<UpdateUserMutationVariables>
   >({
+    mutationMode: "optimistic",
     resource: "users",
+    action: "edit",
     id: userId,
-    queryOptions: {
-      enabled: opened,
-    },
     meta: {
-      gqlQuery: ACCOUNT_SETTINGS_GET_USER_QUERY,
+      gqlMutation: UPDATE_USER_MUTATION,
     },
   });
-
-  const { mutate: updateMutation } = useUpdate<
-    GetFields<AccountSettingsUpdateUserMutation>,
-    HttpError,
-    GetVariables<AccountSettingsUpdateUserMutationVariables>
-  >();
+  const { avatarUrl, name } = queryResult?.data?.data || {};
 
   const closeModal = () => {
     setOpened(false);
   };
 
-  if (isError) {
-    closeModal();
-    return null;
-  }
-
-  if (isLoading) {
+  if (queryResult?.isLoading) {
     return (
       <Drawer
         open={opened}
         width={756}
-        bodyStyle={{
-          background: "#f5f5f5",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
+        styles={{
+          body: {
+            background: "#f5f5f5",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          },
         }}
       >
         <Spin />
       </Drawer>
     );
   }
-
-  const { id, name, email, jobTitle, phone, timezone, avatarUrl } =
-    data?.data ?? {};
-
-  const getActiveForm = (key: FormKeys) => {
-    if (activeForm === key) {
-      return "form";
-    }
-
-    if (!data?.data[key]) {
-      return "empty";
-    }
-
-    return "view";
-  };
 
   return (
     <Drawer
@@ -126,7 +70,15 @@ export const AccountSettings = ({ opened, setOpened, userId }: Props) => {
         header: { display: "none" },
       }}
     >
-      <div className={styles.header}>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          padding: "16px",
+          backgroundColor: "#fff",
+        }}
+      >
         <Text strong>Account Settings</Text>
         <Button
           type="text"
@@ -135,159 +87,43 @@ export const AccountSettings = ({ opened, setOpened, userId }: Props) => {
           onClick={() => closeModal()}
         />
       </div>
-      <div className={styles.container}>
-        <div className={styles.name}>
-          <CustomAvatar
+      <div
+        style={{
+          padding: "16px",
+        }}
+      >
+        <Card>
+          <Form {...formProps} layout="vertical">
+            <CustomAvatar
+              shape="square"
+              src={avatarUrl}
+              name={getNameInitials(name || "")}
+              style={{
+                width: 96,
+                height: 96,
+                marginBottom: "24px",
+              }}
+            />
+            <Form.Item label="Name" name="name">
+              <Input placeholder="Name" />
+            </Form.Item>
+            <Form.Item label="Email" name="email">
+              <Input placeholder="email" />
+            </Form.Item>
+            <Form.Item label="Job title" name="jobTitle">
+              <Input placeholder="jobTitle" />
+            </Form.Item>
+            <Form.Item label="Phone" name="phone">
+              <Input placeholder="Timezone" />
+            </Form.Item>
+          </Form>
+          <SaveButton
+            {...saveButtonProps}
             style={{
-              marginRight: "1rem",
-              flexShrink: 0,
-              fontSize: "40px",
+              display: "block",
+              marginLeft: "auto",
             }}
-            size={96}
-            src={avatarUrl}
-            name={name}
           />
-          <Typography.Title
-            level={3}
-            style={{ padding: 0, margin: 0, width: "100%" }}
-            className={styles.title}
-            editable={{
-              onChange(value) {
-                updateMutation({
-                  resource: "users",
-                  id,
-                  values: { name: value },
-                  mutationMode: "optimistic",
-                  successNotification: false,
-                  meta: {
-                    gqlMutation: ACCOUNT_SETTINGS_UPDATE_USER_MUTATION,
-                  },
-                });
-              },
-              triggerType: ["text", "icon"],
-              // @ts-expect-error Ant Design Icon's v5.0.1 has an issue with @types/react@^18.2.66
-              icon: <EditOutlined className={styles.titleEditIcon} />,
-            }}
-          >
-            {name}
-          </Typography.Title>
-        </div>
-        <Card
-          title={
-            <Space size={15}>
-              {/* @ts-expect-error Ant Design Icon's v5.0.1 has an issue with @types/react@^18.2.66 */}
-              <UserOutlined />
-              <Text size="sm">User profile</Text>
-            </Space>
-          }
-          headStyle={{ padding: "0 12px" }}
-          bodyStyle={{ padding: "0" }}
-        >
-          <SingleElementForm
-            useFormProps={{
-              id,
-              resource: "users",
-              meta: {
-                gqlMutation: ACCOUNT_SETTINGS_UPDATE_USER_MUTATION,
-              },
-            }}
-            formProps={{ initialValues: { jobTitle } }}
-            // @ts-expect-error Ant Design Icon's v5.0.1 has an issue with @types/react@^18.2.66
-            icon={<IdcardOutlined className="tertiary" />}
-            state={getActiveForm("jobTitle")}
-            itemProps={{
-              name: "jobTitle",
-              label: "Title",
-            }}
-            view={<Text>{jobTitle}</Text>}
-            onClick={() => setActiveForm("jobTitle")}
-            onUpdate={() => setActiveForm(undefined)}
-            onCancel={() => setActiveForm(undefined)}
-          >
-            <Input />
-          </SingleElementForm>
-          <SingleElementForm
-            useFormProps={{
-              id,
-              resource: "users",
-              meta: {
-                gqlMutation: ACCOUNT_SETTINGS_UPDATE_USER_MUTATION,
-              },
-            }}
-            formProps={{ initialValues: { phone } }}
-            // @ts-expect-error Ant Design Icon's v5.0.1 has an issue with @types/react@^18.2.66
-            icon={<PhoneOutlined className="tertiary" />}
-            state={getActiveForm("phone")}
-            itemProps={{
-              name: "phone",
-              label: "Phone",
-            }}
-            view={<Text>{phone}</Text>}
-            onClick={() => setActiveForm("phone")}
-            onUpdate={() => setActiveForm(undefined)}
-            onCancel={() => setActiveForm(undefined)}
-          >
-            <Input />
-          </SingleElementForm>
-          <SingleElementForm
-            useFormProps={{
-              id,
-              resource: "users",
-              meta: {
-                gqlMutation: ACCOUNT_SETTINGS_UPDATE_USER_MUTATION,
-              },
-            }}
-            formProps={{ initialValues: { timezone } }}
-            style={{ borderBottom: "none" }}
-            // @ts-expect-error Ant Design Icon's v5.0.1 has an issue with @types/react@^18.2.66
-            icon={<GlobalOutlined className="tertiary" />}
-            state={getActiveForm("timezone")}
-            itemProps={{
-              name: "timezone",
-              label: "TimezoneEnum",
-            }}
-            view={<Text>{timezone}</Text>}
-            onClick={() => setActiveForm("timezone")}
-            onUpdate={() => setActiveForm(undefined)}
-            onCancel={() => setActiveForm(undefined)}
-          >
-            <Select style={{ width: "100%" }} options={timezoneOptions} />
-          </SingleElementForm>
-        </Card>
-        <Card
-          title={
-            <Space size={15}>
-              {/* @ts-expect-error Ant Design Icon's v5.0.1 has an issue with @types/react@^18.2.66 */}
-              <SafetyCertificateOutlined />
-              <Text size="sm">Security</Text>
-            </Space>
-          }
-          headStyle={{ padding: "0 12px" }}
-          bodyStyle={{ padding: "0" }}
-        >
-          <SingleElementForm
-            useFormProps={{
-              id,
-              resource: "users",
-              meta: {
-                gqlMutation: ACCOUNT_SETTINGS_UPDATE_USER_MUTATION,
-              },
-            }}
-            formProps={{ initialValues: { email } }}
-            // @ts-expect-error Ant Design Icon's v5.0.1 has an issue with @types/react@^18.2.66
-            icon={<MailOutlined className="tertiary" />}
-            state={getActiveForm("email")}
-            itemProps={{
-              name: "email",
-              label: "Email",
-            }}
-            view={<Text>{email}</Text>}
-            onClick={() => setActiveForm("email")}
-            onUpdate={() => setActiveForm(undefined)}
-            onCancel={() => setActiveForm(undefined)}
-          >
-            <Input />
-          </SingleElementForm>
         </Card>
       </div>
     </Drawer>
