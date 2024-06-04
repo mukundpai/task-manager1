@@ -1,9 +1,71 @@
+import { DASHBOARD_DEALS_CHART_QUERY } from '@/graphql/queries'
+import { DashboardDealsChartQuery } from '@/graphql/types'
+import { mapDealsData } from '@/utilities/utilities/helpers'
+import { DollarOutlined } from '@ant-design/icons'
+import { Area } from '@ant-design/plots'
+import { useList } from '@refinedev/core'
+import { GetFieldsFromList } from '@refinedev/nestjs-query'
+import { Card } from 'antd' 
 import React from 'react'
+import { Text } from '../text'
+import { AreaConfig } from '@ant-design/plots'
+import { TextAreaConfig } from 'antd/es/config-provider/context'
+import { AreaOptions } from '@ant-design/plots/es/core'
 
-const Deals = () => {
+const DealsChart = () => {
+    const { data } = useList<GetFieldsFromList<DashboardDealsChartQuery>>
+    ({
+        resource: 'dealStages',
+        meta: {
+            gqlQuery: DASHBOARD_DEALS_CHART_QUERY
+        }
+    });
+
+    const dealData = React.useMemo(() => {
+        return mapDealsData(data?.data);
+    }, [data?.data])
+
+
+    const config: AreaConfig = {
+        data: dealData,
+        xField: 'timeText',
+        yField: 'value',
+        stack: false,
+        seriesField: 'state',
+        : true,
+        // startOnZero: false,
+        // smooth: true,
+        legend: {
+            offsetY: -6
+        }
+        
+
+    }
+
+
   return (
-    <div>Deals</div>
+    <Card
+        style={{ height: '100%' }}
+        // headStyle={{ padding: '8px 16px' }}
+        // bodyStyle={{ padding: '24px 24px 0 24px'}}
+        title={
+          <div
+            style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px'
+            }}
+            >
+              <DollarOutlined />
+              <Text size="sm" style={{ marginLeft: '0.5rem' }}>
+                    Deals
+                </Text>
+            </div>
+        }
+    >
+        <Area {...config} height={325} />
+    </Card>
   )
 }
 
-export default Deals
+export default DealsChart
