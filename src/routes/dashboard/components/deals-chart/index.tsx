@@ -42,7 +42,7 @@ export const DashboardDealsChart = () => {
       tickCount: 4,
       label: {
         formatter: (v) => {
-          return `$${Number(v) / 1000}k`;
+          return `rs${Number(v) / 1000}k`;
         },
       },
     },
@@ -50,7 +50,7 @@ export const DashboardDealsChart = () => {
       formatter: (data) => {
         return {
           name: data.state,
-          value: `$${Number(data.value) / 1000}k`,
+          value: `rs${Number(data.value) / 1000}k`,
         };
       },
     },
